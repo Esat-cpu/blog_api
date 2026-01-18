@@ -8,7 +8,7 @@ class Post(models.Model):
     title = models.CharField(max_length=150)
     slug = models.SlugField(max_length=75, unique=True)
     content = models.TextField()
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, related_name="posts", on_delete=models.CASCADE)
     is_published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
