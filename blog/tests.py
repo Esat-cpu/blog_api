@@ -55,7 +55,7 @@ class PostVisibilityAndAccessTestCase(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-        ids = [post["id"] for post in response.data]
+        ids = [post["id"] for post in response.data["results"]]
         self.assertIn(self.published_post1.id, ids)
         self.assertIn(self.published_post2.id, ids)
         self.assertNotIn(self.unpublished_post1.id, ids)
@@ -73,7 +73,7 @@ class PostVisibilityAndAccessTestCase(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-        ids = [post["id"] for post in response.data]
+        ids = [post["id"] for post in response.data["results"]]
         self.assertIn(self.published_post1.id, ids)
         self.assertIn(self.unpublished_post1.id, ids)
         self.assertIn(self.published_post2.id, ids)
