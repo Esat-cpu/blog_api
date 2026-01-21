@@ -111,3 +111,47 @@ class PostVisibilityAndAccessTestCase(APITestCase):
         unpublished_status2 = self.get_detail_status(self.unpublished_post2)
         self.assertEqual(unpublished_status2, 404)
 
+
+class PostPermissionsTestCase(APITestCase):
+    def setUp(self):
+        self.user1 = User.objects.create_user(
+            username="user1",
+            password="123456"
+        )
+        self.user2 = User.objects.create_user(
+            username="user2",
+            password="654321"
+        )
+
+        self.post1 = Post.objects.create(
+            title="Title",
+            content="Content",
+            author=self.user1,
+            is_published=True
+        )
+
+
+    def test_anonymous_user_cannot_create_post(self):
+        response = self.client.post(
+            reverse("post-list"),
+            data={"title":"title", "content": "content"}
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+
+    def test_authenticated_user_can_create_post(self):
+        """
+        Authenticated users can create posts,
+        and the author of the post is set to requesting user.
+        """
+        logged_in = self.client.login(username="user1", password="123456")
+        self.assertTrue(logged_in)
+
+        response = self.client.post(
+            reverse("post-list"),
+            data={"title": "a title", "content": "a content"}
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["author"], "user1")
+

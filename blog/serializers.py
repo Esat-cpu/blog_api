@@ -5,6 +5,7 @@ from blog.models import Post
 
 class PostSerializer(serializers.HyperlinkedModelSerializer):
     author = serializers.ReadOnlyField(source="author.username")
+    slug = serializers.ReadOnlyField()
 
     class Meta:
         model = Post
