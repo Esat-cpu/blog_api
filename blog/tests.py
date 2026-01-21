@@ -143,7 +143,7 @@ class PostPermissionsTestCase(APITestCase):
     def test_authenticated_user_can_create_post(self):
         """
         Authenticated users can create posts,
-        and the author of the post is set to requesting user.
+        and the author is set to the requesting user.
         """
         logged_in = self.client.login(username="user1", password="123456")
         self.assertTrue(logged_in)
@@ -155,3 +155,59 @@ class PostPermissionsTestCase(APITestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data["author"], "user1")
 
+
+    def test_anonymous_user_cannot_update_post(self):
+        url = reverse("post-detail", args=(self.post1.id, ))
+        response = self.client.patch(
+            url, data={"title": "changed title"}
+        )
+        self.assertEqual(response.status_code, 403)
+
+
+    def test_anonymous_user_cannot_delete_post(self):
+        url = reverse("post-detail", args=(self.post1.id, ))
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 403)
+
+
+    def test_authenticated_user_cannot_update_others_post(self):
+        logged_in = self.client.login(username="user2", password="654321")
+        self.assertTrue(logged_in)
+
+        url = reverse("post-detail", args=(self.post1.id, ))
+        response = self.client.patch(
+            url, data={"title": "changed title"}
+        )
+        self.assertEqual(response.status_code, 403)
+
+
+    def test_authenticated_user_cannot_delete_others_post(self):
+        logged_in = self.client.login(username="user2", password="654321")
+        self.assertTrue(logged_in)
+
+        url = reverse("post-detail", args=(self.post1.id, ))
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 403)
+
+
+    def test_authenticated_user_can_update_their_post(self):
+        logged_in = self.client.login(username="user1", password="123456")
+        self.assertTrue(logged_in)
+
+        url = reverse("post-detail", args=(self.post1.id, ))
+        response = self.client.patch(
+            url, data={"title": "changed title"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.post1.refresh_from_db()
+        self.assertEqual(self.post1.title, "changed title")
+
+
+    def test_authenticated_user_can_delete_their_post(self):
+        logged_in = self.client.login(username="user1", password="123456")
+        self.assertTrue(logged_in)
+
+        url = reverse("post-detail", args=(self.post1.id, ))
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(Post.objects.filter(id=self.post1.id).exists())
