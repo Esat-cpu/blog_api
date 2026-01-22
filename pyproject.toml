@@ -1,6 +1,6 @@
 [project]
 name = "blog-api"
-version = "0.1.0"
+version = "1.0.0"
 description = "Blog API"
 readme = "README.md"
 requires-python = ">=3.14"
@@ -8,5 +8,7 @@ dependencies = [
     "django>=6.0.1",
     "django-environ>=0.12.0",
     "djangorestframework>=3.16.1",
+    "djangorestframework-simplejwt>=5.5.1",
+    "djoser>=2.3.3",
     "psycopg2-binary>=2.9.11",
 ]

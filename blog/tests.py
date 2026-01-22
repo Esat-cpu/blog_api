@@ -1,4 +1,5 @@
 from rest_framework.test import APITestCase
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.urls import reverse
 from django.contrib.auth.models import User
 from blog.models import Post
@@ -46,6 +47,11 @@ class PostVisibilityAndAccessTestCase(APITestCase):
         response = self.client.get(url)
         return response.status_code
 
+    def login_as_user(self, user:User):
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+
 
     def test_anonymous_user_sees_only_published_posts(self):
         """
@@ -67,8 +73,8 @@ class PostVisibilityAndAccessTestCase(APITestCase):
         Authenticated users should only see published posts of others,
         and all of their posts.
         """
-        logged_in = self.client.login(username="user1", password="123456")
-        self.assertTrue(logged_in)
+        self.login_as_user(self.user1)
+
         url = reverse("post-list")
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -96,8 +102,7 @@ class PostVisibilityAndAccessTestCase(APITestCase):
         Authenticated users can only access published posts of others,
         and all of their posts.
         """
-        logged_in = self.client.login(username="user1", password="123456")
-        self.assertTrue(logged_in)
+        self.login_as_user(self.user1)
 
         published_status1 = self.get_detail_status(self.published_post1)
         self.assertEqual(published_status1, 200)
@@ -131,13 +136,19 @@ class PostPermissionsTestCase(APITestCase):
         )
 
 
+    def login_as_user(self, user:User):
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+
+
     def test_anonymous_user_cannot_create_post(self):
         response = self.client.post(
             reverse("post-list"),
             data={"title":"title", "content": "content"}
         )
 
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
 
     def test_authenticated_user_can_create_post(self):
@@ -145,8 +156,7 @@ class PostPermissionsTestCase(APITestCase):
         Authenticated users can create posts,
         and the author is set to the requesting user.
         """
-        logged_in = self.client.login(username="user1", password="123456")
-        self.assertTrue(logged_in)
+        self.login_as_user(self.user1)
 
         response = self.client.post(
             reverse("post-list"),
@@ -161,18 +171,17 @@ class PostPermissionsTestCase(APITestCase):
         response = self.client.patch(
             url, data={"title": "changed title"}
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
 
     def test_anonymous_user_cannot_delete_post(self):
         url = reverse("post-detail", args=(self.post1.id, ))
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
 
     def test_authenticated_user_cannot_update_others_post(self):
-        logged_in = self.client.login(username="user2", password="654321")
-        self.assertTrue(logged_in)
+        self.login_as_user(self.user2)
 
         url = reverse("post-detail", args=(self.post1.id, ))
         response = self.client.patch(
@@ -182,8 +191,7 @@ class PostPermissionsTestCase(APITestCase):
 
 
     def test_authenticated_user_cannot_delete_others_post(self):
-        logged_in = self.client.login(username="user2", password="654321")
-        self.assertTrue(logged_in)
+        self.login_as_user(self.user2)
 
         url = reverse("post-detail", args=(self.post1.id, ))
         response = self.client.delete(url)
@@ -191,8 +199,7 @@ class PostPermissionsTestCase(APITestCase):
 
 
     def test_authenticated_user_can_update_their_post(self):
-        logged_in = self.client.login(username="user1", password="123456")
-        self.assertTrue(logged_in)
+        self.login_as_user(self.user1)
 
         url = reverse("post-detail", args=(self.post1.id, ))
         response = self.client.patch(
@@ -204,8 +211,7 @@ class PostPermissionsTestCase(APITestCase):
 
 
     def test_authenticated_user_can_delete_their_post(self):
-        logged_in = self.client.login(username="user1", password="123456")
-        self.assertTrue(logged_in)
+        self.login_as_user(self.user1)
 
         url = reverse("post-detail", args=(self.post1.id, ))
         response = self.client.delete(url)
